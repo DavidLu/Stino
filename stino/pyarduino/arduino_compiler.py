@@ -31,7 +31,6 @@ class Compiler(object):
     def __init__(self, path, console=None):
         self.need_to_build = True
         self.message_queue = base.message_queue.MessageQueue(console)
-
         target_params_info = arduino_target_params.TargetParamsInfo()
         self.params = target_params_info.get_params()
         self.arduino_info = arduino_info.get_arduino_info()
@@ -502,7 +501,7 @@ def exec_cmd(working_dir, cmd):
     os.environ['CYGWIN'] = 'nodosfilewarning'
     if cmd:
         os.chdir(working_dir)
-        cmd = formatCommand(cmd)
+        cmd = formatCommand(cmd, working_dir)
         compile_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE, shell=True)
         result = compile_proc.communicate()
@@ -516,7 +515,7 @@ def exec_cmd(working_dir, cmd):
     return (return_code, stdout, stderr)
 
 
-def formatCommand(cmd):
+def formatCommand(cmd, working_dir=None):
     if '::' in cmd:
         cmd = cmd.replace('::', ' ')
     cmd = cmd.replace('\\', '/')
@@ -524,6 +523,10 @@ def formatCommand(cmd):
     python_version = base.sys_info.get_python_version()
     if python_version < 3 and os_name == 'windows':
         cmd = '"%s"' % cmd
+    if '"avr-' in cmd:
+        cmd = cmd.replace('"avr-', '"hardware/tools/avr/bin/avr-')
+    if working_dir and '{runtime.tools.avrdude.path}' in cmd:
+        cmd = cmd.replace('{runtime.tools.avrdude.path}', working_dir + '/hardware/tools/avr')
     return cmd
 
 
